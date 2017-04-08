@@ -147,8 +147,7 @@ class Board:
 
                 self.player = 1 - self.player
                 delta_time = round((time() - start_time) * 100) / 100
-                if delta_time < 2:
-                    sleep(2 - delta_time)
+                print(delta_time)
                 # reset the nodes
                 nodes = 0
                 # Player must pass?
@@ -157,10 +156,11 @@ class Board:
             black_cnt = 0
             white_cnt = 0
             for i in self.array:
-                if i == 'b':
-                    black_cnt += 1
-                if i == 'w':
-                    white_cnt += 1
+                for j in i:
+                    if j == 'b':
+                        black_cnt += 1
+                    if j == 'w':
+                        white_cnt += 1
             if white_cnt > black_cnt:
                 screen.create_text(250, 550, anchor="c", font=("Consolas", 15), text="You Win!")
             elif white_cnt == black_cnt:
