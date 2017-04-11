@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # created by avartialu@gmail.com on 2017/4/7
-from copy import deepcopy
 from time import *
-from AI.minimax import *
+import numpy as np
+from AI.monte_carlo import *
 
 
 class Board:
@@ -29,10 +29,14 @@ class Board:
         self.array[3][4] = "b"
         self.array[4][3] = "b"
         self.array[4][4] = "w"
+        self.array = tuple(self.array)
 
         # Initializing old values
         self.old_array = self.array
 
+        # MCTS
+        self.MCTS = MonteCarloTreeSearch(self)
+        self.MCTS.update(board=self)
         # update
         self.update()
 
@@ -136,22 +140,11 @@ class Board:
             screen.update()
             # If the computer is AI, make a move
             if self.player == 1:
-                start_time = time()
-                self.old_array = self.array
-                alpha_beta_result = alpha_beta(self, self.array, depth, -float("inf"), float("inf"), 1)
-                self.array = alpha_beta_result[1]
-
-                if len(alpha_beta_result) == 3:
-                    position = alpha_beta_result[2]
-                    self.old_array[position[0]][position[1]] = "b"
-
-                self.player = 1 - self.player
-                delta_time = round((time() - start_time) * 100) / 100
-                print(delta_time)
-                # reset the nodes
-                nodes = 0
-                # Player must pass?
-                self.pass_test()
+                start_time = datetime.utcnow()
+                mcts_move = self.MCTS.play()
+                self.board_move(mcts_move[0], mcts_move[1])
+                delta_time = datetime.utcnow() - start_time
+                print("Time used for this step: {} ".format(delta_time))
         else:
             black_cnt = 0
             white_cnt = 0
@@ -168,74 +161,6 @@ class Board:
             else:
                 screen.create_text(250, 550, anchor="c", font=("Consolas", 15), text="You Lose!")
 
-    def move(self, passed_array, x, y):
-        """
-        FUNCTION: Returns a board after making a move according to Othello rules
-        Assumes the move is valid
-        :param passed_array: 8x8 matrix
-        :param x: index of the last move
-        :param y: index of the last move
-        :return: 8x8 matrix
-        """
-        # Must copy the passedArray so we don't alter the original
-        array = deepcopy(passed_array)
-        # Set color and set the moved location to be that color
-        if self.player == 0:
-            color = "w"
-        else:
-            color = "b"
-        array[x][y] = color
-
-        # Determining the neighbours to the square
-        neighbours = []
-        for i in range(max(0, x - 1), min(x + 2, 8)):
-            for j in range(max(0, y - 1), min(y + 2, 8)):
-                if array[i][j] is not None:
-                    neighbours.append([i, j])
-
-        # Which tiles to convert
-        convert = []
-
-        # For all the generated neighbours, determine if they form a line
-        # If a line is formed, we will add it to the convert array
-        for neighbour in neighbours:
-            neigh_x = neighbour[0]
-            neigh_y = neighbour[1]
-            # Check if the neighbour is of a different color - it must be to form a line
-            if array[neigh_x][neigh_y] != color:
-                # The path of each individual line
-                path = []
-
-                # Determining direction to move
-                delta_x = neigh_x - x
-                delta_y = neigh_y - y
-
-                temp_x = neigh_x
-                temp_y = neigh_y
-
-                # While we are in the bounds of the board
-                while 0 <= temp_x <= 7 and 0 <= temp_y <= 7:
-                    path.append([temp_x, temp_y])
-                    value = array[temp_x][temp_y]
-                    # If we reach a blank tile, we're done and there's no line
-                    if value is None:
-                        break
-                    # If we reach a tile of the player's color, a line is formed
-                    if value == color:
-                        # Append all of our path nodes to the convert array
-                        for node in path:
-                            convert.append(node)
-                        break
-                    # Move the tile
-                    temp_x += delta_x
-                    temp_y += delta_y
-
-        # Convert all the appropriate tiles
-        for node in convert:
-            array[node[0]][node[1]] = color
-
-        return array
-
     # Moves to position
     def board_move(self, x, y):
         """
@@ -248,7 +173,8 @@ class Board:
         # Move and update screen
         self.old_array = self.array
         self.old_array[x][y] = "w"
-        self.array = self.move(self.array, x, y)
+        self.array = move(self.array, self.player, x, y)
+        self.MCTS.update(self)
 
         # Switch Player
         self.player = 1 - self.player
@@ -312,4 +238,3 @@ class Board:
             self.update()
         else:
             self.passed = False
-

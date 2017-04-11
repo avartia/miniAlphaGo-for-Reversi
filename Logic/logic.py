@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # created by avartialu@gmail.com on 2017/4/7
 from init import *
-
+from copy import deepcopy
 
 def valid(array, player, x, y):
     """
@@ -65,6 +65,90 @@ def valid(array, player, x, y):
                         temp_x += delta_x
                         temp_y += delta_y
             return is_valid
+
+
+def get_valid_moves(array, player=1):
+    """
+    :param array: 8x8 matrix
+    :param player: 默认为计算机
+    :return:
+    """
+    valid_moves = []
+    for x in range(8):
+        for y in range(8):
+            if valid(array, player, x, y):
+                valid_moves.append([x, y])
+    return valid_moves
+
+
+def move(passed_array, player, x, y):
+    """
+    FUNCTION: Returns a board after making a move according to Othello rules
+    Assumes the move is valid
+    :param passed_array: 8x8 matrix
+    :param player: player now
+    :param x: index of the last move
+    :param y: index of the last move
+    :return: 8x8 matrix
+    """
+    # Must copy the passedArray so we don't alter the original
+    array = deepcopy(passed_array)
+    # Set color and set the moved location to be that color
+    if player == 0:
+        color = "w"
+    else:
+        color = "b"
+    array[x][y] = color
+
+    # Determining the neighbours to the square
+    neighbours = []
+    for i in range(max(0, x - 1), min(x + 2, 8)):
+        for j in range(max(0, y - 1), min(y + 2, 8)):
+            if array[i][j] is not None:
+                neighbours.append([i, j])
+
+    # Which tiles to convert
+    convert = []
+
+    # For all the generated neighbours, determine if they form a line
+    # If a line is formed, we will add it to the convert array
+    for neighbour in neighbours:
+        neigh_x = neighbour[0]
+        neigh_y = neighbour[1]
+        # Check if the neighbour is of a different color - it must be to form a line
+        if array[neigh_x][neigh_y] != color:
+            # The path of each individual line
+            path = []
+
+            # Determining direction to move
+            delta_x = neigh_x - x
+            delta_y = neigh_y - y
+
+            temp_x = neigh_x
+            temp_y = neigh_y
+
+            # While we are in the bounds of the board
+            while 0 <= temp_x <= 7 and 0 <= temp_y <= 7:
+                path.append([temp_x, temp_y])
+                value = array[temp_x][temp_y]
+                # If we reach a blank tile, we're done and there's no line
+                if value is None:
+                    break
+                # If we reach a tile of the player's color, a line is formed
+                if value == color:
+                    # Append all of our path nodes to the convert array
+                    for node in path:
+                        convert.append(node)
+                    break
+                # Move the tile
+                temp_x += delta_x
+                temp_y += delta_y
+
+    # Convert all the appropriate tiles
+    for node in convert:
+        array[node[0]][node[1]] = color
+
+    return array
 
 
 def create_buttons():

@@ -10,6 +10,6 @@ screen.pack()
 # Variable setup for minimax
 nodes = 0
 # max tree depth
-depth = 6
+depth = 5
 # total moves
 moves = 0
