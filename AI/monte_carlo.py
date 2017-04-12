@@ -27,12 +27,6 @@ class Node(object):
         self.remain_valid_moves = get_valid_moves(self.state, self.player)
         self.N = 0
         self.Q = 0
-        self.terminal = False
-        if len(self.remain_valid_moves) == 0:
-            if len(get_valid_moves(self.state, 1 - self.player)) == 0:
-                self.terminal = True
-            else:
-                self.children.append(Node(self.state, 1-self.player, self.depth + 1, self))
 
     def add_child(self, choose_move):
         """
@@ -52,6 +46,16 @@ class Node(object):
         """
         return len(self.remain_valid_moves) == 0
 
+    def terminal(self):
+        """
+        whether in terminal state
+        :return: True or False
+        """
+        return len(self.remain_valid_moves) == 0 and len(self.children) == 0
+
+    def __str__(self):
+        return "state:{}\n depth:{}".format(self.state, self.depth)
+
 
 class MonteCarloTreeSearch(object):
     """
@@ -66,7 +70,7 @@ class MonteCarloTreeSearch(object):
         Cp: parameter for MCTS
         """
         self.board = board
-        self.time_limit = timedelta(seconds=kwargs.get("time_limit", 10))
+        self.time_limit = timedelta(seconds=kwargs.get("time_limit", 3))
         self.max_moves = kwargs.get('max_moves', 60)
         self.max_depth = 0
         self.Cp = kwargs.get('Cp', 1.414)
@@ -90,7 +94,7 @@ class MonteCarloTreeSearch(object):
         :param node: Node
         :return:
         """
-        while not node.terminal:
+        while not node.terminal():
             if node.fully_expandable():
                 value, node = self.best_child(node, self.Cp)
             else:
@@ -129,8 +133,9 @@ class MonteCarloTreeSearch(object):
         """
         s1 = datetime.utcnow()
         cur_player = node.player
-        state = node.state
-        while True:
+        state = deepcopy(node.state)
+        num_moves = 0
+        while num_moves < 60:
             valid_moves = get_valid_moves(state, cur_player)
             if len(valid_moves) == 0:
                 cur_player = 1 - cur_player
@@ -139,8 +144,9 @@ class MonteCarloTreeSearch(object):
                     # terminal
                     break
             chosen_move = choice(valid_moves)
-            state = move(state, cur_player, chosen_move[0], chosen_move[1])
+            state = move(state, cur_player, chosen_move[0], chosen_move[1], copy=False)
             cur_player = 1 - cur_player
+            num_moves += 1
         self.default_time += datetime.utcnow() - s1
         return dumb_score(state, self.board.player) > 0
 
@@ -182,5 +188,5 @@ class MonteCarloTreeSearch(object):
 
         max_win_percent, chosen_child = self.best_child(self.root, 0)
         print("Maximum depth searched: {} \nMax percent of winning:{}".format(self.max_depth, max_win_percent))
-
+        # print("Size of table: {}".format(len(valid_table)))
         return chosen_child.pre_move
