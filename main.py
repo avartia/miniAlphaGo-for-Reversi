@@ -12,6 +12,6 @@ if __name__ == "__main__":
     screen.focus_set()
 
     # Run forever
-    root.wm_title("Mini AlphaGo")
-    root.mainloop()
+    Root.wm_title("Mini AlphaGo")
+    Root.mainloop()
 

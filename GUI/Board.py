@@ -25,10 +25,10 @@ class Board:
                 self.array[x].append(None)
 
         # Initializing center values
-        self.array[3][3] = "w"
-        self.array[3][4] = "b"
-        self.array[4][3] = "b"
-        self.array[4][4] = "w"
+        self.array[3][3] = 0
+        self.array[3][4] = 1
+        self.array[4][3] = 1
+        self.array[4][4] = 0
         self.array = tuple(self.array)
 
         # Initializing old values
@@ -50,13 +50,13 @@ class Board:
         for x in range(8):
             for y in range(8):
                 # Could replace the circles with images later, if I want
-                if self.old_array[x][y] == "w":
+                if self.old_array[x][y] == 0:
                     screen.create_oval(54 + 50 * x, 54 + 50 * y, 96 + 50 * x, 96 + 50 * y,
                                        tags="tile {0}-{1}".format(x, y), fill="#aaa", outline="#aaa")
                     screen.create_oval(54 + 50 * x, 52 + 50 * y, 96 + 50 * x, 94 + 50 * y,
                                        tags="tile {0}-{1}".format(x, y), fill="#fff", outline="#fff")
 
-                elif self.old_array[x][y] == "b":
+                elif self.old_array[x][y] == 1:
                     screen.create_oval(54 + 50 * x, 54 + 50 * y, 96 + 50 * x, 96 + 50 * y,
                                        tags="tile {0}-{1}".format(x, y), fill="#000", outline="#000")
                     screen.create_oval(54 + 50 * x, 52 + 50 * y, 96 + 50 * x, 94 + 50 * y,
@@ -66,7 +66,7 @@ class Board:
         for x in range(8):
             for y in range(8):
                 # could replace the circles with images later
-                if self.array[x][y] != self.old_array[x][y] and self.array[x][y] == "w":
+                if self.array[x][y] != self.old_array[x][y] and self.array[x][y] == 0:
                     screen.delete("{0}-{1}".format(x, y))
                     # 42 is width of tile so 21 is half of that
                     # Shrinking 收缩效果
@@ -95,7 +95,7 @@ class Board:
                                        outline="#fff")
                     screen.update()
 
-                elif self.array[x][y] != self.old_array[x][y] and self.array[x][y] == "b":
+                elif self.array[x][y] != self.old_array[x][y] and self.array[x][y] == 1:
                     screen.delete("{0}-{1}".format(x, y))
                     # 42 is width of tile so 21 is half of that
                     # Shrinking
@@ -141,7 +141,7 @@ class Board:
             # If the computer is AI, make a move
             if self.player == 1:
                 start_time = datetime.utcnow()
-                mcts_move = self.MCTS.play()
+                mcts_move = self.MCTS.uct_search()
                 self.board_move(mcts_move[0], mcts_move[1])
                 delta_time = datetime.utcnow() - start_time
                 print("Time used for this step: {} ".format(delta_time))
@@ -150,9 +150,9 @@ class Board:
             white_cnt = 0
             for i in self.array:
                 for j in i:
-                    if j == 'b':
+                    if j == 1:
                         black_cnt += 1
-                    if j == 'w':
+                    if j == 0:
                         white_cnt += 1
             if white_cnt > black_cnt:
                 screen.create_text(250, 550, anchor="c", font=("Consolas", 15), text="You Win!")
@@ -169,16 +169,15 @@ class Board:
         :param y: index of move
         :return:
         """
-        global nodes
         # Move and update screen
-        self.old_array = self.array
-        self.old_array[x][y] = "w"
+        self.old_array = deepcopy(self.array)
         self.array = move(self.array, self.player, x, y)
-        self.MCTS.update(self)
+        self.old_array[x][y] = self.array[x][y]
 
         # Switch Player
         self.player = 1 - self.player
-        self.update()
+        # update MCTS
+        self.MCTS.update(self)
 
         # Check if ai must pass
         self.pass_test()
@@ -198,9 +197,9 @@ class Board:
         computer_score = 0
         for x in range(8):
             for y in range(8):
-                if self.array[x][y] == "w":
+                if self.array[x][y] == 0:
                     player_score += 1
-                elif self.array[x][y] == "b":
+                elif self.array[x][y] == 1:
                     computer_score += 1
 
         if self.player == 0:

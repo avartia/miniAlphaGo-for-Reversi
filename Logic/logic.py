@@ -3,6 +3,7 @@
 from init import *
 from copy import deepcopy
 
+
 def valid(array, player, x, y):
     """
     Checks if a move is valid for a given array.
@@ -13,10 +14,7 @@ def valid(array, player, x, y):
     :return: bool
     """
     # Sets player color
-    if player == 0:
-        color = "w"
-    else:
-        color = "b"
+    color = player
 
     # If there's already a piece there, it's an invalid move
     if array[x][y] is not None:
@@ -77,7 +75,7 @@ def get_valid_moves(array, player=1):
     for x in range(8):
         for y in range(8):
             if valid(array, player, x, y):
-                valid_moves.append([x, y])
+                valid_moves.append((x, y))
     return valid_moves
 
 
@@ -94,10 +92,7 @@ def move(passed_array, player, x, y):
     # Must copy the passedArray so we don't alter the original
     array = deepcopy(passed_array)
     # Set color and set the moved location to be that color
-    if player == 0:
-        color = "w"
-    else:
-        color = "b"
+    color = player
     array[x][y] = color
 
     # Determining the neighbours to the square
@@ -183,12 +178,9 @@ def dumb_score(array, player):
     """
     score = 0
     # Set player and opponent colors
-    if player == 1:
-        color = "b"
-        opponent = "w"
-    else:
-        color = "w"
-        opponent = "b"
+    color = player
+    opponent = 1 - player
+
     # +1 if it's player color, -1 if it's opponent color
     for x in range(8):
         for y in range(8):
@@ -208,12 +200,8 @@ def slightly_less_dumb_score(array, player):
     """
     score = 0
     # Set player and opponent colors
-    if player == 1:
-        color = "b"
-        opponent = "w"
-    else:
-        color = "w"
-        opponent = "b"
+    color = player
+    opponent = 1 - player
     # Go through all the tiles
     for x in range(8):
         for y in range(8):
@@ -247,12 +235,8 @@ def decent_heuristic(array, player):
     adjacent_val = 5
     side_val = 5
     # Set player and opponent colors
-    if player == 1:
-        color = "b"
-        opponent = "w"
-    else:
-        color = "w"
-        opponent = "b"
+    color = player
+    opponent = 1 - player
     # Go through all the tiles
     for x in range(8):
         for y in range(8):

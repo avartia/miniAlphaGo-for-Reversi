@@ -6,6 +6,53 @@ from Logic.logic import *
 from math import log, sqrt
 
 
+class Node(object):
+    """
+    A node of tree.
+    """
+    def __init__(self, state, player, depth, parent=None, pre_move=None):
+        """
+        :param state: 8x8 matrix
+        :param player: current player
+        :param depth: depth in the tree
+        :param parent: parent
+        :param pre_move: last_move
+        """
+        self.player = player
+        self.state = state
+        self.parent = parent
+        self.children = []
+        self.depth = depth
+        self.pre_move = pre_move
+        self.remain_valid_moves = get_valid_moves(self.state, self.player)
+        self.N = 0
+        self.Q = 0
+        self.terminal = False
+        if len(self.remain_valid_moves) == 0:
+            if len(get_valid_moves(self.state, 1 - self.player)) == 0:
+                self.terminal = True
+            else:
+                self.children.append(Node(self.state, 1-self.player, self.depth + 1, self))
+
+    def add_child(self, choose_move):
+        """
+        add a child.
+        :param choose_move: 8x8 matrix
+        :return:
+        """
+        self.remain_valid_moves.remove(choose_move)
+        child = Node(move(self.state, self.player, choose_move[0], choose_move[1]),
+                     1 - self.player, self.depth+1, self, choose_move)
+        self.children.append(child)
+
+    def fully_expandable(self):
+        """
+        whether fully expandable
+        :return:
+        """
+        return len(self.remain_valid_moves) == 0
+
+
 class MonteCarloTreeSearch(object):
     """
     Monte Carlo Tree Search
@@ -20,12 +67,11 @@ class MonteCarloTreeSearch(object):
         """
         self.board = board
         self.time_limit = timedelta(seconds=kwargs.get("time_limit", 10))
-        self.states = []
         self.max_moves = kwargs.get('max_moves', 60)
-        self.wins = {}
-        self.plays = {}
         self.max_depth = 0
         self.Cp = kwargs.get('Cp', 1.414)
+        self.root = None
+        self.default_time = timedelta(seconds=0)
 
     def update(self, board):
         """
@@ -34,107 +80,107 @@ class MonteCarloTreeSearch(object):
         :return:
         """
         self.board = board
-        self.states.append(board.array)
-        self.wins = {}
-        self.plays = {}
+        self.root = Node(board.array, board.player, 0)
         self.max_depth = 0
+        self.default_time = timedelta(seconds=0)
 
-    def play(self):
+    def tree_policy(self, node):
         """
-        calculate the best move. Keep simulation until time out.
+        TREEPOLICY
+        :param node: Node
+        :return:
+        """
+        while not node.terminal:
+            if node.fully_expandable():
+                value, node = self.best_child(node, self.Cp)
+            else:
+                return self.expand(node)
+        return node
+
+    def best_child(self, node, c):
+        """
+        return the best child.
+        :param node: Node
+        :param c: constant
+        :return: [value, child]
+        """
+        child_value = [(child.N - child.Q) / child.N + c*sqrt(log(node.N) / child.N) for child in node.children]
+        value = max(child_value)
+        idx = child_value.index(value)
+        return value, node.children[idx]
+
+    def expand(self, node):
+        """
+        expand node
+        :param node: Node
+        :return: expanded node
+        """
+        chosen_move = choice(node.remain_valid_moves)
+        node.add_child(chosen_move)
+        if node.children[-1].depth > self.max_depth:
+            self.max_depth = node.children[-1].depth
+        return node.children[-1]
+
+    def default_policy(self, node):
+        """
+        randomly choose child until terminate
+        :param node: Node
+        :return: reward
+        """
+        s1 = datetime.utcnow()
+        cur_player = node.player
+        state = node.state
+        while True:
+            valid_moves = get_valid_moves(state, cur_player)
+            if len(valid_moves) == 0:
+                cur_player = 1 - cur_player
+                valid_moves = get_valid_moves(state, cur_player)
+                if len(valid_moves) == 0:
+                    # terminal
+                    break
+            chosen_move = choice(valid_moves)
+            state = move(state, cur_player, chosen_move[0], chosen_move[1])
+            cur_player = 1 - cur_player
+        self.default_time += datetime.utcnow() - s1
+        return dumb_score(state, self.board.player) > 0
+
+    def back_up(self, node, reward):
+        """
+        back up.
+        :param node: Node
+        :param reward: reward
+        :return:
+        """
+        while node is not None:
+            node.N += 1
+            if node.player == self.board.player:
+                node.Q += reward
+            else:
+                node.Q += 1 - reward
+            node = node.parent
+
+    def uct_search(self):
+        """
+        uct search.
         :return: a move [x, y] maximizing winning percentage
         """
         # tree depth
         self.max_depth = 0
-        state = self.states[-1]
-        cur_player = self.board.player
-        valid_moves = get_valid_moves(state, cur_player)
-
-        # special case
-        if len(valid_moves) == 0:
-            return
-        if len(valid_moves) == 1:
-            return valid_moves[0]
 
         # count of simulation
         count = 0
 
         start_time = datetime.utcnow()
         while datetime.utcnow() - start_time < self.time_limit:
-            self.simulation()
+            v = self.tree_policy(self.root)
+            reward = self.default_policy(v)
+            self.back_up(v, reward)
             count += 1
 
-        moves_states = [(p, move(state, cur_player, p[0], p[1])) for p in valid_moves]
+        print("Num of Simulations: {} \nTime played:{}\nDefault Policy Played:{}\n".
+              format(count, datetime.utcnow() - start_time, self.default_time))
 
-        print("Num of Simulations: {} \n Time played:{}".format(count, datetime.utcnow() - start_time))
+        max_win_percent, chosen_child = self.best_child(self.root, 0)
+        print("Maximum depth searched: {} \nMax percent of winning:{}".format(self.max_depth, max_win_percent))
 
-        # choose the move with max win percent
-        percent_win, win_move = max(
-            (
-                self.wins.get((cur_player, str(s)), 0) / self.plays.get((cur_player, str(s)), 1), p
-            )
-            for p, s in moves_states
-        )
-        print("Maximum depth searched: {} \n Max percent of winning:{}".format(self.max_depth, percent_win))
-
-        return win_move
-
-    def simulation(self):
-        """
-        play randomly from the current position and then updates the statistics tables
-        :return:
-        """
-        plays, wins = self.plays, self.wins
-
-        visited_states = set()
-        copy_states = self.states[:]
-        copy_board = self.board
-        state = copy_states[-1]
-        cur_player = copy_board.player
-        winner = 0
-
-        expand = True
-        for t in range(1, self.max_moves + 1):
-            valid_moves = get_valid_moves(state, cur_player)
-            moves_states = [(p, move(state, cur_player, p[0], p[1])) for p in valid_moves]
-
-            # 如果所有的valid move信息已经在 plays 字典中
-            # fully expanded => return the best child
-            if all(plays.get((cur_player, str(s))) for p, s in moves_states):
-                log_total = log(sum(plays[(cur_player, str(s))] for p, s in moves_states))
-                value, chosen_move, state = max(
-                    ((wins[(cur_player, str(s))] / plays[(cur_player, str(s))] +
-                      self.Cp * sqrt(log_total / plays[(cur_player, str(s))]), p, s)
-                     for p, s in moves_states
-                     )
-                )
-            else:
-                # select randomly from valid moves
-                chosen_move, state = choice(moves_states)
-
-            copy_states.append(state)
-            # if state is not fully expanded
-            if expand and (cur_player, str(state)) not in plays:
-                expand = False
-                wins[(cur_player, str(state))] = 0
-                plays[(cur_player, str(state))] = 0
-                if t > self.max_depth:
-                    self.max_depth += 1
-                # 简单比较
-                winner = (dumb_score(state, 1) > 0)
-
-            visited_states.add((cur_player, str(state)))
-            # 0 player 1 AI
-
-            cur_player = 1 - cur_player
-            if not expand:
-                break
-
-        # backup
-        for player, state in visited_states:
-            s = str(state)
-            if (player, s) not in self.plays:
-                continue
-            self.plays[(player, s)] += 1
-            if player == winner:
-                self.wins[(player, s)] += 1
+        return chosen_child.pre_move

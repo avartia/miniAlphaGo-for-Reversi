@@ -3,13 +3,13 @@
 from tkinter import *
 
 # Tkinter setup
-root = Tk()
-screen = Canvas(root, width=500, height=600, background="#222", highlightthickness=0)
+Root = Tk()
+screen = Canvas(Root, width=500, height=600, background="#222", highlightthickness=0)
 screen.pack()
 
 # Variable setup for minimax
 nodes = 0
 # max tree depth
-depth = 5
+# depth = 5
 # total moves
 moves = 0

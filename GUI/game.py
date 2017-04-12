@@ -38,7 +38,7 @@ def click_handle(event):
     y_mouse = event.y
     if running:
         if x_mouse >= 450 and y_mouse <= 50:
-            root.destroy()
+            Root.destroy()
         elif x_mouse <= 50 and y_mouse <= 50:
             init_game()
         else:
@@ -75,7 +75,7 @@ def key_handle(event):
         init_game()
     # quit game
     elif symbol.lower() == "q":
-        root.destroy()
+        Root.destroy()
 
 
 def init_game():
