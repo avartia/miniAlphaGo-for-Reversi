@@ -70,7 +70,7 @@ class MonteCarloTreeSearch(object):
         Cp: parameter for MCTS
         """
         self.board = board
-        self.time_limit = timedelta(seconds=kwargs.get("time_limit", 3))
+        self.time_limit = timedelta(seconds=kwargs.get("time_limit", 10))
         self.max_moves = kwargs.get('max_moves', 60)
         self.max_depth = 0
         self.Cp = kwargs.get('Cp', 1.414)
@@ -134,6 +134,10 @@ class MonteCarloTreeSearch(object):
         s1 = datetime.utcnow()
         cur_player = node.player
         state = deepcopy(node.state)
+        corner_computer = (state[0][0] == self.board.player) + (state[0][7] == self.board.player) + \
+                          (state[7][0] == self.board.player) + (state[7][7] == self.board.player)
+        corner_player = (state[0][0] == (1 - self.board.player)) + (state[0][7] == (1 - self.board.player)) + \
+                        (state[7][0] == (1 - self.board.player)) + (state[7][7] == (1 - self.board.player))
         num_moves = 0
         while num_moves < 60:
             valid_moves = get_valid_moves(state, cur_player)
@@ -147,7 +151,15 @@ class MonteCarloTreeSearch(object):
             state = move(state, cur_player, chosen_move[0], chosen_move[1], copy=False)
             cur_player = 1 - cur_player
             num_moves += 1
-        self.default_time += datetime.utcnow() - s1
+            if corner_computer > ((state[0][0] == self.board.player) + (state[0][7] == self.board.player) +
+                                    (state[7][0] == self.board.player) + (state[7][7] == self.board.player)):
+                self.default_time += datetime.utcnow() - s1
+                return 1
+            if corner_player > ((state[0][0] == (1 - self.board.player)) + (state[0][7] == (1 - self.board.player)) +
+                (state[7][0] == (1 - self.board.player)) + (state[7][7] == (1 - self.board.player))):
+                self.default_time += datetime.utcnow() - s1
+                return 0
+
         return dumb_score(state, self.board.player) > 0
 
     def back_up(self, node, reward):

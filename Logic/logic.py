@@ -21,48 +21,65 @@ def valid(array, player, x, y):
         return False
 
     else:
-        # Generating the list of neighbours
-        neighbour = False
-        neighbours = []
-        for i in range(max(0, x - 1), min(x + 2, 8)):
-            for j in range(max(0, y - 1), min(y + 2, 8)):
-                if array[i][j] is not None:
-                    neighbour = True
-                    neighbours.append([i, j])
-        # If there's no neighbours, it's an invalid move
-        if not neighbour:
-            return False
-        else:
-            # Iterating through neighbours to determine if at least one line is formed
-            is_valid = False
-            for neighbour in neighbours:
+        # according to 6 directions
+        # right direct
+        if x < 6 and array[x+1][y] == 1 - color:
+            for i in range(x+2, 8):
+                if array[i][y] == color:
+                    return True
+                if array[i][y] is None:
+                    break
+        # left direct
+        if x > 1 and array[x-1][y] == 1 - color:
+            for i in range(x - 2, -1, -1):
+                if array[i][y] == color:
+                    return True
+                if array[i][y] is None:
+                    break
+        # up direct
+        if y < 6 and array[x][y+1] == 1 - color:
+            for i in range(y+2, 8):
+                if array[x][i] == color:
+                    return True
+                if array[x][i] is None:
+                    break
+        # down direct
+        if y > 1 and array[x][y-1] == 1 - color:
+            for i in range(y - 2, -1, -1):
+                if array[x][i] == color:
+                    return True
+                if array[x][i] is None:
+                    break
+        # up right direct
+        if x < 6 and y < 6 and array[x+1][y+1] == 1 - color:
+            for i in range(2, min(8-x, 8-y)):
+                if array[x+i][y+i] == color:
+                    return True
+                if array[x+i][y+i] is None:
+                    break
+        # up left
+        if x > 1 and y < 6 and array[x-1][y+1] == 1 - color:
+            for i in range(2, min(x+1, 8-y)):
+                if array[x-i][y+i] == color:
+                    return True
+                if array[x-i][y+i] is None:
+                    break
+        # down right
+        if x < 6 and y > 1 and array[x+1][y-1] == 1 - color:
+            for i in range(2, min(8-x, y+1)):
+                if array[x+i][y-i] == color:
+                    return True
+                if array[x+i][y-i] is None:
+                    break
+        # down left
+        if x > 1 and y > 1 and array[x-1][y-1] == 1 - color:
+            for i in range(2, min(x+1, y+1)):
+                if array[x-i][y-i] == color:
+                    return True
+                if array[x-i][y-i] is None:
+                    break
 
-                neigh_x = neighbour[0]
-                neigh_y = neighbour[1]
-
-                # If the neighbour color is equal to your color, it doesn't form a line
-                # Go onto the next neighbour
-                if array[neigh_x][neigh_y] == color:
-                    continue
-                else:
-                    # Determine the direction of the line
-                    delta_x = neigh_x - x
-                    delta_y = neigh_y - y
-                    temp_x = neigh_x
-                    temp_y = neigh_y
-
-                    while 0 <= temp_x <= 7 and 0 <= temp_y <= 7:
-                        # If an empty space, no line is formed
-                        if array[temp_x][temp_y] is None:
-                            break
-                        # If it reaches a piece of the player's color, it forms a line
-                        if array[temp_x][temp_y] == color:
-                            is_valid = True
-                            break
-                        # Move the index according to the direction of the line
-                        temp_x += delta_x
-                        temp_y += delta_y
-            return is_valid
+        return False
 
 
 def get_valid_moves(array, player=1):
@@ -79,7 +96,7 @@ def get_valid_moves(array, player=1):
     return valid_moves
 
 
-def move(passed_array, player, x, y):
+def move(passed_array, player, x, y, copy=True):
     """
     FUNCTION: Returns a board after making a move according to Othello rules
     Assumes the move is valid
@@ -87,61 +104,91 @@ def move(passed_array, player, x, y):
     :param player: player now
     :param x: index of the last move
     :param y: index of the last move
+    :param copy: pass by copy or not.
     :return: 8x8 matrix
     """
     # Must copy the passedArray so we don't alter the original
-    array = deepcopy(passed_array)
+    if copy:
+        array = deepcopy(passed_array)
+    else:
+        array = passed_array
     # Set color and set the moved location to be that color
     color = player
     array[x][y] = color
 
-    # Determining the neighbours to the square
-    neighbours = []
-    for i in range(max(0, x - 1), min(x + 2, 8)):
-        for j in range(max(0, y - 1), min(y + 2, 8)):
-            if array[i][j] is not None:
-                neighbours.append([i, j])
-
-    # Which tiles to convert
-    convert = []
-
-    # For all the generated neighbours, determine if they form a line
-    # If a line is formed, we will add it to the convert array
-    for neighbour in neighbours:
-        neigh_x = neighbour[0]
-        neigh_y = neighbour[1]
-        # Check if the neighbour is of a different color - it must be to form a line
-        if array[neigh_x][neigh_y] != color:
-            # The path of each individual line
-            path = []
-
-            # Determining direction to move
-            delta_x = neigh_x - x
-            delta_y = neigh_y - y
-
-            temp_x = neigh_x
-            temp_y = neigh_y
-
-            # While we are in the bounds of the board
-            while 0 <= temp_x <= 7 and 0 <= temp_y <= 7:
-                path.append([temp_x, temp_y])
-                value = array[temp_x][temp_y]
-                # If we reach a blank tile, we're done and there's no line
-                if value is None:
-                    break
-                # If we reach a tile of the player's color, a line is formed
-                if value == color:
-                    # Append all of our path nodes to the convert array
-                    for node in path:
-                        convert.append(node)
-                    break
-                # Move the tile
-                temp_x += delta_x
-                temp_y += delta_y
-
-    # Convert all the appropriate tiles
-    for node in convert:
-        array[node[0]][node[1]] = color
+    # according to 6 directions
+    # right direct
+    if x < 6 and array[x + 1][y] == 1 - color:
+        for i in range(x + 2, 8):
+            if array[i][y] == color:
+                for j in range(x+1, i):
+                    array[j][y] = color
+                break
+            if array[i][y] is None:
+                break
+    # left direct
+    if x > 1 and array[x - 1][y] == 1 - color:
+        for i in range(x - 1, -1, -1):
+            if array[i][y] == color:
+                for j in range(x - 1, i, -1):
+                    array[j][y] = color
+                break
+            if array[i][y] is None:
+                break
+    # up direct
+    if y < 6 and array[x][y + 1] == 1 - color:
+        for i in range(y + 1, 8):
+            if array[x][i] == color:
+                for j in range(y+1, i):
+                    array[x][j] = color
+                break
+            if array[x][i] is None:
+                break
+    # down direct
+    if y > 1 and array[x][y - 1] == 1 - color:
+        for i in range(y - 2, -1, -1):
+            if array[x][i] == color:
+                for j in range(y-1, i, -1):
+                    array[x][j] = color
+                break
+            if array[x][i] is None:
+                break
+    # up right direct
+    if x < 6 and y < 6 and array[x + 1][y + 1] == 1 - color:
+        for i in range(2, min(8 - x, 8 - y)):
+            if array[x + i][y + i] == color:
+                for j in range(1, i):
+                    array[x+j][y+j] = color
+                break
+            if array[x + i][y + i] is None:
+                break
+    # up left
+    if x > 1 and y < 6 and array[x - 1][y + 1] == 1 - color:
+        for i in range(2, min(x + 1, 8 - y)):
+            if array[x - i][y + i] == color:
+                for j in range(1, i):
+                    array[x - j][y + j] = color
+                break
+            if array[x - i][y + i] is None:
+                break
+    # down right
+    if x < 6 and y > 1 and array[x + 1][y - 1] == 1 - color:
+        for i in range(2, min(8 - x, y + 1)):
+            if array[x + i][y - i] == color:
+                for j in range(1, i):
+                    array[x+j][y-j] = color
+                break
+            if array[x + i][y - i] is None:
+                break
+    # down left
+    if x > 1 and y > 1 and array[x - 1][y - 1] == 1 - color:
+        for i in range(2, min(x + 1, y + 1)):
+            if array[x - i][y - i] == color:
+                for j in range(1, i):
+                    array[x-j][y-j] = color
+                break
+            if array[x - i][y - i] is None:
+                break
 
     return array
 

@@ -134,7 +134,8 @@ class Board:
                         screen.create_oval(68 + 50 * x, 68 + 50 * y, 32 + 50 * (x + 1), 32 + 50 * (y + 1),
                                            tags="highlight", fill="#008000", outline="#008000")
 
-        if not self.over:
+        if not (len(get_valid_moves(self.array, self.player)) == 0 and \
+                        len(get_valid_moves(self.array, 1 - self.player)) == 0):
             # Draw the scoreboard and update the screen
             self.draw_score_board()
             screen.update()

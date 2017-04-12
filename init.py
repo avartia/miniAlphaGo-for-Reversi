@@ -13,3 +13,6 @@ nodes = 0
 # depth = 5
 # total moves
 moves = 0
+
+# Variable setup for monte carlo
+valid_table = {}
