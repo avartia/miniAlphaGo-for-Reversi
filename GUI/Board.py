@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # created by avartialu@gmail.com on 2017/4/7
 from time import *
-import numpy as np
+
 from AI.monte_carlo import *
 
 
@@ -23,7 +23,6 @@ class Board:
             self.array.append([])
             for y in range(8):
                 self.array[x].append(None)
-
         # Initializing center values
         self.array[3][3] = 0
         self.array[3][4] = 1
@@ -130,12 +129,12 @@ class Board:
         for x in range(8):
             for y in range(8):
                 if self.player == 0:
-                    if valid(self.array, self.player, x, y):
+                    if valid.valid(self.array, self.player, x, y):
                         screen.create_oval(68 + 50 * x, 68 + 50 * y, 32 + 50 * (x + 1), 32 + 50 * (y + 1),
                                            tags="highlight", fill="#008000", outline="#008000")
 
-        if not (len(get_valid_moves(self.array, self.player)) == 0 and \
-                        len(get_valid_moves(self.array, 1 - self.player)) == 0):
+        if not (len(valid.get_valid_moves(self.array, self.player)) == 0 and
+                        len(valid.get_valid_moves(self.array, 1 - self.player)) == 0):
             # Draw the scoreboard and update the screen
             self.draw_score_board()
             screen.update()
@@ -227,7 +226,7 @@ class Board:
         must_pass = True
         for x in range(8):
             for y in range(8):
-                if valid(self.array, self.player, x, y):
+                if valid.valid(self.array, self.player, x, y):
                     must_pass = False
         if must_pass:
             self.player = 1 - self.player

@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 # created by avartialu@gmail.com on 2017/4/8
 from datetime import *
-from random import choice
-from Logic.logic import *
 from math import log, sqrt
+from multiprocessing.dummy import Pool as ThreadPool
+from random import choice
+
+from Logic.logic import *
 
 
 class Node(object):
@@ -24,9 +26,10 @@ class Node(object):
         self.children = []
         self.depth = depth
         self.pre_move = pre_move
-        self.remain_valid_moves = get_valid_moves(self.state, self.player)
+        self.remain_valid_moves = valid.get_valid_moves(self.state, self.player)
         self.N = 0
         self.Q = 0
+        self.start_time = None
 
     def add_child(self, choose_move):
         """
@@ -76,6 +79,7 @@ class MonteCarloTreeSearch(object):
         self.Cp = kwargs.get('Cp', 1.414)
         self.root = None
         self.default_time = timedelta(seconds=0)
+        self.start_time = None
 
     def update(self, board):
         """
@@ -139,11 +143,12 @@ class MonteCarloTreeSearch(object):
         corner_player = (state[0][0] == (1 - self.board.player)) + (state[0][7] == (1 - self.board.player)) + \
                         (state[7][0] == (1 - self.board.player)) + (state[7][7] == (1 - self.board.player))
         num_moves = 0
+        res = None
         while num_moves < 60:
-            valid_moves = get_valid_moves(state, cur_player)
+            valid_moves = valid.get_valid_moves(state, cur_player)
             if len(valid_moves) == 0:
                 cur_player = 1 - cur_player
-                valid_moves = get_valid_moves(state, cur_player)
+                valid_moves = valid.get_valid_moves(state, cur_player)
                 if len(valid_moves) == 0:
                     # terminal
                     break
@@ -153,14 +158,16 @@ class MonteCarloTreeSearch(object):
             num_moves += 1
             if corner_computer > ((state[0][0] == self.board.player) + (state[0][7] == self.board.player) +
                                     (state[7][0] == self.board.player) + (state[7][7] == self.board.player)):
-                self.default_time += datetime.utcnow() - s1
-                return 1
+                res = 1
+                break
             if corner_player > ((state[0][0] == (1 - self.board.player)) + (state[0][7] == (1 - self.board.player)) +
                 (state[7][0] == (1 - self.board.player)) + (state[7][7] == (1 - self.board.player))):
-                self.default_time += datetime.utcnow() - s1
-                return 0
-
-        return dumb_score(state, self.board.player) > 0
+                res = 0
+                break
+        self.default_time += datetime.utcnow() - s1
+        if res is None:
+            return dumb_score(state, self.board.player) > 0
+        return res
 
     def back_up(self, node, reward):
         """
@@ -186,19 +193,48 @@ class MonteCarloTreeSearch(object):
         self.max_depth = 0
 
         # count of simulation
-        count = 0
-
-        start_time = datetime.utcnow()
-        while datetime.utcnow() - start_time < self.time_limit:
-            v = self.tree_policy(self.root)
-            reward = self.default_policy(v)
-            self.back_up(v, reward)
-            count += 1
-
+        self.start_time = datetime.utcnow()
+        count = self.mul_simulation(self.root)
         print("Num of Simulations: {} \nTime played:{}\nDefault Policy Played:{}\n".
-              format(count, datetime.utcnow() - start_time, self.default_time))
+              format(count, datetime.utcnow() - self.start_time, self.default_time))
 
         max_win_percent, chosen_child = self.best_child(self.root, 0)
         print("Maximum depth searched: {} \nMax percent of winning:{}".format(self.max_depth, max_win_percent))
         # print("Size of table: {}".format(len(valid_table)))
+        print("{}/{}".format(self.root.Q, self.root.N))
+        for child in self.root.children:
+            print("{}/{}".format(child.Q, child.N))
         return chosen_child.pre_move
+
+    def mul_simulation(self, node):
+        """
+        multiprocessing simulation.
+        :param node: root node
+        :return: count
+        """
+        count = 0
+        while datetime.utcnow() - self.start_time < self.time_limit:
+            v = self.tree_policy(node)
+            reward = self.default_policy(v)
+            self.back_up(v, reward)
+            count += 1
+            if node.fully_expandable():
+                break
+        pool = ThreadPool(len(node.children))
+        counts = pool.map(self.simulation, node.children)
+        count += sum(counts)
+        return count
+
+    def simulation(self, node):
+        """
+        :param node: root node
+        :return: count
+        """
+        count = 0
+        while datetime.utcnow() - self.start_time < self.time_limit:
+            v = self.tree_policy(node)
+            reward = self.default_policy(v)
+            self.back_up(v, reward)
+            count += 1
+        return count
+

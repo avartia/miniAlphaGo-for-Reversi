@@ -1,99 +1,9 @@
 # -*- coding: utf-8 -*-
 # created by avartialu@gmail.com on 2017/4/7
-from init import *
 from copy import deepcopy
 
-
-def valid(array, player, x, y):
-    """
-    Checks if a move is valid for a given array.
-    :param array: 8x8 matrix
-    :param player: 0(player) or 1(computer)
-    :param x: index of move
-    :param y: index of move
-    :return: bool
-    """
-    # Sets player color
-    color = player
-
-    # If there's already a piece there, it's an invalid move
-    if array[x][y] is not None:
-        return False
-
-    else:
-        # according to 6 directions
-        # right direct
-        if x < 6 and array[x+1][y] == 1 - color:
-            for i in range(x+2, 8):
-                if array[i][y] == color:
-                    return True
-                if array[i][y] is None:
-                    break
-        # left direct
-        if x > 1 and array[x-1][y] == 1 - color:
-            for i in range(x - 2, -1, -1):
-                if array[i][y] == color:
-                    return True
-                if array[i][y] is None:
-                    break
-        # up direct
-        if y < 6 and array[x][y+1] == 1 - color:
-            for i in range(y+2, 8):
-                if array[x][i] == color:
-                    return True
-                if array[x][i] is None:
-                    break
-        # down direct
-        if y > 1 and array[x][y-1] == 1 - color:
-            for i in range(y - 2, -1, -1):
-                if array[x][i] == color:
-                    return True
-                if array[x][i] is None:
-                    break
-        # up right direct
-        if x < 6 and y < 6 and array[x+1][y+1] == 1 - color:
-            for i in range(2, min(8-x, 8-y)):
-                if array[x+i][y+i] == color:
-                    return True
-                if array[x+i][y+i] is None:
-                    break
-        # up left
-        if x > 1 and y < 6 and array[x-1][y+1] == 1 - color:
-            for i in range(2, min(x+1, 8-y)):
-                if array[x-i][y+i] == color:
-                    return True
-                if array[x-i][y+i] is None:
-                    break
-        # down right
-        if x < 6 and y > 1 and array[x+1][y-1] == 1 - color:
-            for i in range(2, min(8-x, y+1)):
-                if array[x+i][y-i] == color:
-                    return True
-                if array[x+i][y-i] is None:
-                    break
-        # down left
-        if x > 1 and y > 1 and array[x-1][y-1] == 1 - color:
-            for i in range(2, min(x+1, y+1)):
-                if array[x-i][y-i] == color:
-                    return True
-                if array[x-i][y-i] is None:
-                    break
-
-        return False
-
-
-def get_valid_moves(array, player=1):
-    """
-    :param array: 8x8 matrix
-    :param player: 默认为计算机
-    :return:
-    """
-    valid_moves = []
-    for x in range(8):
-        for y in range(8):
-            if valid(array, player, x, y):
-                valid_moves.append((x, y))
-    return valid_moves
+from Logic import valid
+from init import *
 
 
 def move(passed_array, player, x, y, copy=True):
@@ -112,85 +22,7 @@ def move(passed_array, player, x, y, copy=True):
         array = deepcopy(passed_array)
     else:
         array = passed_array
-    # Set color and set the moved location to be that color
-    color = player
-    array[x][y] = color
-
-    # according to 6 directions
-    # right direct
-    if x < 6 and array[x + 1][y] == 1 - color:
-        for i in range(x + 2, 8):
-            if array[i][y] == color:
-                for j in range(x+1, i):
-                    array[j][y] = color
-                break
-            if array[i][y] is None:
-                break
-    # left direct
-    if x > 1 and array[x - 1][y] == 1 - color:
-        for i in range(x - 1, -1, -1):
-            if array[i][y] == color:
-                for j in range(x - 1, i, -1):
-                    array[j][y] = color
-                break
-            if array[i][y] is None:
-                break
-    # up direct
-    if y < 6 and array[x][y + 1] == 1 - color:
-        for i in range(y + 1, 8):
-            if array[x][i] == color:
-                for j in range(y+1, i):
-                    array[x][j] = color
-                break
-            if array[x][i] is None:
-                break
-    # down direct
-    if y > 1 and array[x][y - 1] == 1 - color:
-        for i in range(y - 2, -1, -1):
-            if array[x][i] == color:
-                for j in range(y-1, i, -1):
-                    array[x][j] = color
-                break
-            if array[x][i] is None:
-                break
-    # up right direct
-    if x < 6 and y < 6 and array[x + 1][y + 1] == 1 - color:
-        for i in range(2, min(8 - x, 8 - y)):
-            if array[x + i][y + i] == color:
-                for j in range(1, i):
-                    array[x+j][y+j] = color
-                break
-            if array[x + i][y + i] is None:
-                break
-    # up left
-    if x > 1 and y < 6 and array[x - 1][y + 1] == 1 - color:
-        for i in range(2, min(x + 1, 8 - y)):
-            if array[x - i][y + i] == color:
-                for j in range(1, i):
-                    array[x - j][y + j] = color
-                break
-            if array[x - i][y + i] is None:
-                break
-    # down right
-    if x < 6 and y > 1 and array[x + 1][y - 1] == 1 - color:
-        for i in range(2, min(8 - x, y + 1)):
-            if array[x + i][y - i] == color:
-                for j in range(1, i):
-                    array[x+j][y-j] = color
-                break
-            if array[x + i][y - i] is None:
-                break
-    # down left
-    if x > 1 and y > 1 and array[x - 1][y - 1] == 1 - color:
-        for i in range(2, min(x + 1, y + 1)):
-            if array[x - i][y - i] == color:
-                for j in range(1, i):
-                    array[x-j][y-j] = color
-                break
-            if array[x - i][y - i] is None:
-                break
-
-    return array
+    return valid.move(array, player, x, y)
 
 
 def create_buttons():
@@ -340,7 +172,7 @@ def final_heuristic(array, player):
         num_moves = 0
         for x in range(8):
             for y in range(8):
-                if valid(array, player, x, y):
+                if valid.valid(array, player, x, y):
                     num_moves += 1
         return num_moves + decent_heuristic(array, player)
     elif moves <= 52:
