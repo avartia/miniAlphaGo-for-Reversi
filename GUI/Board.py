@@ -138,7 +138,7 @@ class Board:
             # Draw the scoreboard and update the screen
             self.draw_score_board()
             screen.update()
-            # If the computer is AI, make a move
+            # If the computer is AI, make a exec_move
             if self.player == 1:
                 start_time = datetime.utcnow()
                 mcts_move = self.MCTS.uct_search()
@@ -164,14 +164,14 @@ class Board:
     # Moves to position
     def board_move(self, x, y):
         """
-        perform a board move.
-        :param x: index of move
-        :param y: index of move
+        perform a board exec_move.
+        :param x: index of exec_move
+        :param y: index of exec_move
         :return:
         """
         # Move and update screen
         self.old_array = deepcopy(self.array)
-        self.array = move(self.array, self.player, x, y)
+        self.array = exec_move(self.array, self.player, x, y)
         self.old_array[x][y] = self.array[x][y]
 
         # Switch Player

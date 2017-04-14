@@ -3,7 +3,7 @@ from random import *
 
 def valid(tuple array, int player, int x, int y):
     '''
-    Check valid move.
+    Check valid exec_move.
     '''
     cdef int color = player
     if array[x][y] is not None:
@@ -85,12 +85,12 @@ def get_valid_moves(tuple array, int player=1):
 
 def move(tuple array, int player, int x, int y):
     """
-    FUNCTION: Returns a board after making a move according to Othello rules
-    Assumes the move is valid
+    FUNCTION: Returns a board after making a exec_move according to Othello rules
+    Assumes the exec_move is valid
     :param passed_array: 8x8 matrix
     :param player: player now
-    :param x: index of the last move
-    :param y: index of the last move
+    :param x: index of the last exec_move
+    :param y: index of the last exec_move
     :param copy: pass by copy or not.
     :return: 8x8 matrix
     """

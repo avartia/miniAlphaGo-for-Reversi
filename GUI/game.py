@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # created by avartialu@gmail.com on 2017/4/8
 from GUI import Board
-from Logic.logic import *
-
+from init import *
+from Logic import valid
 
 def draw_grid_background(outline=False):
     """
@@ -29,7 +29,7 @@ def draw_grid_background(outline=False):
 
 def click_handle(event):
     """
-    When the user clicks, if it's a valid move, make the move
+    When the user clicks, if it's a valid exec_move, make the exec_move
     :param event: mouse event
     :return:
     """
@@ -49,9 +49,9 @@ def click_handle(event):
                 y = int((event.y - 50) / 50)
                 # Determine the grid index for where the mouse was clicked
 
-                # If the click is inside the bounds and the move is valid, move to that location
+                # If the click is inside the bounds and the exec_move is valid, exec_move to that location
                 if 0 <= x <= 7 and 0 <= y <= 7:
-                    if valid(board.array, board.player, x, y):
+                    if valid.valid(board.array, board.player, x, y):
                         board.board_move(x, y)
     else:
         # Player of AI choose
@@ -76,6 +76,29 @@ def key_handle(event):
     # quit game
     elif symbol.lower() == "q":
         Root.destroy()
+
+
+def create_buttons():
+    """
+    create buttons.
+    :return:
+    """
+    # Restart button
+    # Background/shadow
+    screen.create_rectangle(0, 5, 50, 55, fill="#000033", outline="#000033")
+    screen.create_rectangle(0, 0, 50, 50, fill="#000088", outline="#000088")
+
+    # Arrow
+    screen.create_arc(5, 5, 45, 45, fill="#000088", width="2", style="arc", outline="white", extent=300)
+    screen.create_polygon(33, 38, 36, 45, 40, 39, fill="white", outline="white")
+
+    # Quit button
+    # Background/shadow
+    screen.create_rectangle(450, 5, 500, 55, fill="#330000", outline="#330000")
+    screen.create_rectangle(450, 0, 500, 50, fill="#880000", outline="#880000")
+    # "X"
+    screen.create_line(455, 5, 495, 45, fill="white", width="3")
+    screen.create_line(495, 5, 455, 45, fill="white", width="3")
 
 
 def init_game():

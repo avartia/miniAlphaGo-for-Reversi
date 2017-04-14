@@ -4,7 +4,7 @@ from datetime import *
 from math import log, sqrt
 from multiprocessing.dummy import Pool as ThreadPool
 from random import choice
-
+from Strategy.strategy import *
 from Logic.logic import *
 
 
@@ -38,8 +38,8 @@ class Node(object):
         :return:
         """
         self.remain_valid_moves.remove(choose_move)
-        child = Node(move(self.state, self.player, choose_move[0], choose_move[1]),
-                     1 - self.player, self.depth+1, self, choose_move)
+        child = Node(exec_move(self.state, self.player, choose_move[0], choose_move[1]),
+                     1 - self.player, self.depth + 1, self, choose_move)
         self.children.append(child)
 
     def fully_expandable(self):
@@ -80,6 +80,7 @@ class MonteCarloTreeSearch(object):
         self.root = None
         self.default_time = timedelta(seconds=0)
         self.start_time = None
+        self.definite_count = [0, 0]
 
     def update(self, board):
         """
@@ -91,6 +92,7 @@ class MonteCarloTreeSearch(object):
         self.root = Node(board.array, board.player, 0)
         self.max_depth = 0
         self.default_time = timedelta(seconds=0)
+        self.definite_count = [get_definite_count(self.board.array, p) for p in [0, 1]]
 
     def tree_policy(self, node):
         """
@@ -112,7 +114,7 @@ class MonteCarloTreeSearch(object):
         :param c: constant
         :return: [value, child]
         """
-        child_value = [(child.N - child.Q) / child.N + c*sqrt(log(node.N) / child.N) for child in node.children]
+        child_value = [1 - child.Q / child.N + c*sqrt(log(node.N) / child.N) for child in node.children]
         value = max(child_value)
         idx = child_value.index(value)
         return value, node.children[idx]
@@ -135,15 +137,10 @@ class MonteCarloTreeSearch(object):
         :param node: Node
         :return: reward
         """
-        s1 = datetime.utcnow()
         cur_player = node.player
         state = deepcopy(node.state)
-        corner_computer = (state[0][0] == self.board.player) + (state[0][7] == self.board.player) + \
-                          (state[7][0] == self.board.player) + (state[7][7] == self.board.player)
-        corner_player = (state[0][0] == (1 - self.board.player)) + (state[0][7] == (1 - self.board.player)) + \
-                        (state[7][0] == (1 - self.board.player)) + (state[7][7] == (1 - self.board.player))
+
         num_moves = 0
-        res = None
         while num_moves < 60:
             valid_moves = valid.get_valid_moves(state, cur_player)
             if len(valid_moves) == 0:
@@ -153,21 +150,18 @@ class MonteCarloTreeSearch(object):
                     # terminal
                     break
             chosen_move = choice(valid_moves)
-            state = move(state, cur_player, chosen_move[0], chosen_move[1], copy=False)
+            state = valid.move(state, cur_player, chosen_move[0], chosen_move[1])
             cur_player = 1 - cur_player
             num_moves += 1
-            if corner_computer > ((state[0][0] == self.board.player) + (state[0][7] == self.board.player) +
-                                    (state[7][0] == self.board.player) + (state[7][7] == self.board.player)):
-                res = 1
-                break
-            if corner_player > ((state[0][0] == (1 - self.board.player)) + (state[0][7] == (1 - self.board.player)) +
-                (state[7][0] == (1 - self.board.player)) + (state[7][7] == (1 - self.board.player))):
-                res = 0
-                break
-        self.default_time += datetime.utcnow() - s1
-        if res is None:
-            return dumb_score(state, self.board.player) > 0
-        return res
+            count = get_definite_count(state, self.board.player)
+            if count > self.definite_count[self.board.player]:
+                return count - self.definite_count[self.board.player]
+            count = get_definite_count(state, 1-self.board.player)
+            if count > self.definite_count[1 - self.board.player]:
+                return self.definite_count[1 - self.board.player] - count
+        if dumb_score(state, self.board.player) > 0:
+            return 1
+        return -1
 
     def back_up(self, node, reward):
         """
@@ -177,17 +171,17 @@ class MonteCarloTreeSearch(object):
         :return:
         """
         while node is not None:
-            node.N += 1
-            if node.player == self.board.player:
+            node.N += abs(reward)
+            if node.player == self.board.player and reward > 0:
                 node.Q += reward
-            else:
-                node.Q += 1 - reward
+            elif node.player == 1 - self.board.player and reward < 0:
+                node.Q -= reward
             node = node.parent
 
     def uct_search(self):
         """
         uct search.
-        :return: a move [x, y] maximizing winning percentage
+        :return: a exec_move [x, y] maximizing winning percentage
         """
         # tree depth
         self.max_depth = 0

@@ -60,7 +60,7 @@ def alpha_beta(board, node, dep, alpha, beta, maximizing):
     :param alpha: parameter in alpha_beta pruning
     :param beta: parameter in alpha_beta pruning
     :param maximizing: to maximize or not
-    :return: [value, best result board, best move]
+    :return: [value, best result board, best exec_move]
     """
     global nodes
     nodes += 1
