@@ -4,7 +4,8 @@ from GUI import Board
 from init import *
 from Logic import valid
 
-def draw_grid_background(outline=False):
+
+def draw_grid_background(outline=True):
     """
     Method for drawing the grid lines
     :param outline: whether to draw the outlines
@@ -12,7 +13,7 @@ def draw_grid_background(outline=False):
     """
     # If we want an outline on the board then draw one
     if outline:
-        screen.create_rectangle(50, 50, 450, 450, outline="#111")
+        screen.create_rectangle(50, 50, 450, 450, fill="yellow", outline="#111")
 
     # Drawing the intermediate lines
     for i in range(7):

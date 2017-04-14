@@ -7,6 +7,17 @@ from random import choice
 from Strategy.strategy import *
 from Logic.logic import *
 
+priority_table = [((0, 0), (0, 7), (7, 0), (7, 7)), # 99
+                  ((0, 2), (0, 5), (2, 0), (5, 0), (2, 7), (5, 7), (7, 2), (7, 5)), # 8
+                  ((2, 2), (2, 5), (5, 2), (5, 5)), # 7
+                  ((3, 0), (4, 0), (0, 3), (0, 4), (7, 3), (7, 4), (3, 7), (4, 7)), # 6
+                  ((3, 2), (4, 2), (2, 3), (2, 4), (3, 5), (4, 5), (5, 3), (5, 4)), # 4
+                  ((3, 3), (4, 4), (3, 4), (4, 3)), # 0
+                  ((1, 3), (1, 4), (3, 1), (4, 1), (6, 3), (6, 4), (3, 6), (4, 6)), # -3
+                  ((1, 2), (1, 5), (2, 1), (5, 1), (6, 2), (6, 5), (2, 6), (5, 6)), # -4
+                  ((0, 1), (0, 6), (7, 1), (7, 6), (1, 0), (6, 0), (1, 7), (6, 7)), # -8
+                  ((1, 1), (6, 6), (1, 6), (6, 1))
+                  ]
 
 class Node(object):
     """
@@ -142,26 +153,51 @@ class MonteCarloTreeSearch(object):
 
         num_moves = 0
         while num_moves < 60:
-            valid_moves = valid.get_valid_moves(state, cur_player)
-            if len(valid_moves) == 0:
-                cur_player = 1 - cur_player
-                valid_moves = valid.get_valid_moves(state, cur_player)
-                if len(valid_moves) == 0:
-                    # terminal
+            found = False
+            [cx, cy] = [None, None]
+            if num_moves + moves < 45:
+                for priority in priority_table:
+                    for (x, y) in priority:
+                        if valid.valid(state, cur_player, x, y):
+                            found = True
+                            [cx, cy] = [x, y]
+                            break
+                    if found:
+                        break
+                if not found:
                     break
-            chosen_move = choice(valid_moves)
-            state = valid.move(state, cur_player, chosen_move[0], chosen_move[1])
+            else:
+                valid_set = valid.get_valid_moves(state, cur_player)
+                if len(valid_set) == 0:
+                    break
+                (cx, cy) = choice(valid_set)
+            state = valid.move(state, cur_player, cx, cy)
             cur_player = 1 - cur_player
             num_moves += 1
-            count = get_definite_count(state, self.board.player)
-            if count > self.definite_count[self.board.player]:
-                return count - self.definite_count[self.board.player]
-            count = get_definite_count(state, 1-self.board.player)
-            if count > self.definite_count[1 - self.board.player]:
-                return self.definite_count[1 - self.board.player] - count
-        if dumb_score(state, self.board.player) > 0:
-            return 1
-        return -1
+
+        return dumb_score(state, self.board.player) > 0
+        # valid_moves = valid.get_valid_moves(state, cur_player)
+        # if len(valid_moves) == 0:
+        #     cur_player = 1 - cur_player
+        #     valid_moves = valid.get_valid_moves(state, cur_player)
+        #     if len(valid_moves) == 0:
+        #         # terminal
+        #         break
+        # chosen_move = choice(valid_moves)
+        # state = valid.move(state, cur_player, chosen_move[0], chosen_move[1])
+        # cur_player = 1 - cur_player
+        # num_moves += 1
+
+        # count = get_definite_count(state, self.board.player)
+        # if count > self.definite_count[self.board.player]:
+        #     return count - self.definite_count[self.board.player]
+        # count = get_definite_count(state, 1-self.board.player)
+        # if count > self.definite_count[1 - self.board.player]:
+        #     return self.definite_count[1 - self.board.player] - count
+
+        # if dumb_score(state, self.board.player) > 0:
+        #     return 1
+        # return -1
 
     def back_up(self, node, reward):
         """
@@ -171,11 +207,11 @@ class MonteCarloTreeSearch(object):
         :return:
         """
         while node is not None:
-            node.N += abs(reward)
-            if node.player == self.board.player and reward > 0:
+            node.N += 1
+            if node.player == self.board.player:
                 node.Q += reward
-            elif node.player == 1 - self.board.player and reward < 0:
-                node.Q -= reward
+            else:
+                node.Q += 1 - reward
             node = node.parent
 
     def uct_search(self):
