@@ -44,7 +44,7 @@ def click_handle(event):
             init_game()
         else:
             # Is it the player's turn?
-            if board.player == 0:
+            if board.player == 1 - board.AIPlayer:
                 # Delete the highlights
                 x = int((event.x - 50) / 50)
                 y = int((event.y - 50) / 50)
@@ -77,6 +77,9 @@ def key_handle(event):
     # quit game
     elif symbol.lower() == "q":
         Root.destroy()
+    # recover
+    elif symbol.lower() == "z":
+        board.recover_last_move()
 
 
 def create_buttons():

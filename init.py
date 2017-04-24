@@ -16,3 +16,6 @@ moves = 0
 
 # Variable setup for monte carlo
 valid_table = {}
+# Variables for distributed monte carlo
+k = 1
+m = 1

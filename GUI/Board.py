@@ -9,12 +9,13 @@ class Board:
     """
     A chess board class that handles GUI.
     """
-    def __init__(self, player=0):
+    def __init__(self, AIplayer=1):
         """
         (0 is white and player, 1 is black and computer)
         :param player: 0 or 1
         """
-        self.player = player
+        self.player = 1
+        self.AIPlayer = AIplayer
         self.passed = False
         self.over = False
         # Initializing an empty board
@@ -32,6 +33,8 @@ class Board:
 
         # Initializing old values
         self.old_array = self.array
+
+        self.last_array = self.array
 
         # MCTS
         self.MCTS = MonteCarloTreeSearch(self)
@@ -128,7 +131,7 @@ class Board:
         # 提示效果
         for x in range(8):
             for y in range(8):
-                if self.player == 0:
+                if self.player == 1 - self.AIPlayer:
                     if valid.valid(self.array, self.player, x, y):
                         screen.create_oval(68 + 50 * x, 68 + 50 * y, 32 + 50 * (x + 1), 32 + 50 * (y + 1),
                                            tags="highlight", fill="#008000", outline="#008000")
@@ -139,7 +142,7 @@ class Board:
             self.draw_score_board()
             screen.update()
             # If the computer is AI, make a exec_move
-            if self.player == 1:
+            if self.player == self.AIPlayer:
                 start_time = datetime.utcnow()
                 mcts_move = self.MCTS.uct_search()
                 self.board_move(mcts_move[0], mcts_move[1])
@@ -161,6 +164,18 @@ class Board:
             else:
                 screen.create_text(250, 550, anchor="c", font=("Consolas", 15), text="You Lose!")
 
+    def recover_last_move(self):
+        """
+        recover last move
+        """
+        self.array = self.last_array
+        # update MCTS
+        self.MCTS.update(self)
+
+        # Check if ai must pass
+        self.pass_test()
+        self.update()
+
     # Moves to position
     def board_move(self, x, y):
         """
@@ -169,6 +184,8 @@ class Board:
         :param y: index of exec_move
         :return:
         """
+        if self.player == 1-self.AIPlayer:
+            self.last_array = deepcopy(self.array)
         # Move and update screen
         self.old_array = deepcopy(self.array)
         self.array = exec_move(self.array, self.player, x, y)
@@ -188,7 +205,6 @@ class Board:
         METHOD: Draws scoreboard to screen
         :return:
         """
-        global moves
         # Deleting prior score elements
         screen.delete("score")
 
@@ -202,7 +218,7 @@ class Board:
                 elif self.array[x][y] == 1:
                     computer_score += 1
 
-        if self.player == 0:
+        if self.player == 1-self.AIPlayer:
             player_color = "green"
             computer_color = "gray"
         else:
@@ -216,7 +232,6 @@ class Board:
         screen.create_text(30, 550, anchor="w", tags="score", font=("Consolas", 50), fill="white", text=player_score)
         screen.create_text(400, 550, anchor="w", tags="score", font=("Consolas", 50), fill="black", text=computer_score)
 
-        moves = player_score + computer_score
 
     def pass_test(self):
         """

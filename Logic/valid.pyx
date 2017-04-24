@@ -83,11 +83,28 @@ def get_valid_moves(tuple array, int player=1):
                 valid_moves.append((x, y))
     return valid_moves
 
+def get_priority_valid_moves(tuple array, list priority_table, int player=1):
+    """
+    get the valid moves of the same priority.
+    :param array: 8x8 matrix
+    :param priority_table: 优先表
+    :param player: 默认为计算机
+    :return: valid list
+    """
+    cdef list valid_moves = []
+    for priority in priority_table:
+        for (x, y) in priority:
+            if valid(array, player, x, y):
+                valid_moves.append((x, y))
+        if len(valid_moves) > 0:
+            break
+    return valid_moves
+
 def move(tuple array, int player, int x, int y):
     """
     FUNCTION: Returns a board after making a exec_move according to Othello rules
     Assumes the exec_move is valid
-    :param passed_array: 8x8 matrix
+    :param array: 8x8 matrix
     :param player: player now
     :param x: index of the last exec_move
     :param y: index of the last exec_move
@@ -171,5 +188,34 @@ def move(tuple array, int player, int x, int y):
                 break
             if array[x - i][y - i] is None:
                 break
-
     return array
+
+
+def parity(tuple array, int player, int x, int y):
+    """
+    whether (x, y) is even or odd
+    :param array: 8x8 matrix
+    :param player: 1 for ai
+    :param x:
+    :param y:
+    :return: False even, True odd
+    """
+    cdef int count = 0
+    cdef int has_opposite = False
+    for i in range(8):
+        if array[x][i] is None:
+            count += 1
+        elif array[x][i] == 1 - player:
+            has_opposite = True
+    if count > 0 and count % 2 == 0 and has_opposite:
+        return False
+    count = 0
+    has_opposite = False
+    for i in range(8):
+        if array[i][y] is None:
+            count += 1
+        elif array[i][y] == 1 - player:
+            has_opposite = True
+    return count > 0 and count % 2 == 0 and has_opposite
+
+

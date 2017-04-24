@@ -7,17 +7,25 @@ from random import choice
 from Strategy.strategy import *
 from Logic.logic import *
 
-priority_table = [((0, 0), (0, 7), (7, 0), (7, 7)), # 99
-                  ((0, 2), (0, 5), (2, 0), (5, 0), (2, 7), (5, 7), (7, 2), (7, 5)), # 8
-                  ((2, 2), (2, 5), (5, 2), (5, 5)), # 7
-                  ((3, 0), (4, 0), (0, 3), (0, 4), (7, 3), (7, 4), (3, 7), (4, 7)), # 6
-                  ((3, 2), (4, 2), (2, 3), (2, 4), (3, 5), (4, 5), (5, 3), (5, 4)), # 4
-                  ((3, 3), (4, 4), (3, 4), (4, 3)), # 0
-                  ((1, 3), (1, 4), (3, 1), (4, 1), (6, 3), (6, 4), (3, 6), (4, 6)), # -3
-                  ((1, 2), (1, 5), (2, 1), (5, 1), (6, 2), (6, 5), (2, 6), (5, 6)), # -4
-                  ((0, 1), (0, 6), (7, 1), (7, 6), (1, 0), (6, 0), (1, 7), (6, 7)), # -8
-                  ((1, 1), (6, 6), (1, 6), (6, 1))
+priority_table = [[(0, 0), (0, 7), (7, 0), (7, 7)], # 99
+                  [(0, 2), (0, 5), (2, 0), (5, 0), (2, 7), (5, 7), (7, 2), (7, 5)], # 8
+                  [(2, 2), (2, 5), (5, 2), (5, 5)], # 7
+                  [(3, 0), (4, 0), (0, 3), (0, 4), (7, 3), (7, 4), (3, 7), (4, 7)], # 6
+                  [(3, 2), (4, 2), (2, 3), (2, 4), (3, 5), (4, 5), (5, 3), (5, 4)], # 4
+                  [(3, 3), (4, 4), (3, 4), (4, 3)], # 0
+                  [(1, 3), (1, 4), (3, 1), (4, 1), (6, 3), (6, 4), (3, 6), (4, 6)], # -3
+                  [(1, 2), (1, 5), (2, 1), (5, 1), (6, 2), (6, 5), (2, 6), (5, 6)], # -4
+                  [(0, 1), (0, 6), (7, 1), (7, 6), (1, 0), (6, 0), (1, 7), (6, 7)], # -8
+                  [(1, 1), (6, 6), (1, 6), (6, 1)]
                   ]
+
+roxanne_table = [[(0, 0), (0, 7), (7, 0), (7, 7)],
+[(2, 2), (2, 3), (2, 4), (2, 5), (3, 2), (3, 3), (3, 4), (3, 5), (4, 2), (4, 3), (4, 4), (4, 5), (5, 2), (5, 3), (5, 4), (5, 5)],
+[(2, 0), (3, 0), (4, 0), (5, 0), (2, 7), (3, 7), (4, 7), (5, 7), (0, 2), (0, 3), (0, 4), (0, 5), (7, 2), (7, 3), (7, 4), (7, 5)],
+[(2, 1), (3, 1), (4, 1), (5, 1), (2, 6), (3, 6), (4, 6), (5, 6), (1, 2), (1, 3), (1, 4), (1, 5), (6, 2), (6, 3), (6, 4), (6, 5)],
+[(0, 1), (1, 0), (1, 1), (1, 6), (0, 6), (1, 7), (6, 1), (6, 0), (7, 1), (6, 6), (6, 7), (7, 6)]
+]
+
 
 class Node(object):
     """
@@ -92,6 +100,8 @@ class MonteCarloTreeSearch(object):
         self.default_time = timedelta(seconds=0)
         self.start_time = None
         self.definite_count = [0, 0]
+        self.moves = 4
+        self.priority_table = deepcopy(roxanne_table)
 
     def update(self, board):
         """
@@ -103,7 +113,12 @@ class MonteCarloTreeSearch(object):
         self.root = Node(board.array, board.player, 0)
         self.max_depth = 0
         self.default_time = timedelta(seconds=0)
-        self.definite_count = [get_definite_count(self.board.array, p) for p in [0, 1]]
+        self.moves = 0
+        for i in board.array:
+            for j in i:
+                if j is not None:
+                    self.moves += 1
+        # self.definite_count = [get_definite_count(self.board.array, p) for p in [0, 1]]
 
     def tree_policy(self, node):
         """
@@ -148,15 +163,19 @@ class MonteCarloTreeSearch(object):
         :param node: Node
         :return: reward
         """
+        # global k, m
+        # num_of_win = 0
+        # for i in range(k):
         cur_player = node.player
         state = deepcopy(node.state)
 
         num_moves = 0
-        while num_moves < 60:
+        while num_moves + self.moves < 64:
+            '''
             found = False
             [cx, cy] = [None, None]
             if num_moves + moves < 45:
-                for priority in priority_table:
+                for priority in self.priority_table:
                     for (x, y) in priority:
                         if valid.valid(state, cur_player, x, y):
                             found = True
@@ -165,39 +184,41 @@ class MonteCarloTreeSearch(object):
                     if found:
                         break
                 if not found:
-                    break
+                    cur_player = 1 - cur_player
+                    num_moves += 1
+                    continue
+            '''
+            if num_moves + self.moves < 48:
+                valid_set = valid.get_priority_valid_moves(state, self.priority_table, cur_player)
+                if len(valid_set) == 0:
+                    num_moves += 1
+                    cur_player = 1 - cur_player
+                    continue
+                (cx, cy) = choice(valid_set)
             else:
+                # strategy for last 15 moves
                 valid_set = valid.get_valid_moves(state, cur_player)
                 if len(valid_set) == 0:
-                    break
-                (cx, cy) = choice(valid_set)
+                    cur_player = 1 - cur_player
+                    num_moves += 1
+                    continue
+                # (cx, cy) = choice(valid_set)
+                # sub_valid_nums = [len(valid.get_valid_moves(exec_move(state, cur_player, x=x, y=y), 1-cur_player))
+                #                   for (x, y) in valid_set]
+                # min_sub_valid_num = min(sub_valid_nums)
+                # avoid even parity
+                odd_set = [(vx, vy) for (vx, vy) in valid_set if valid.parity(state, cur_player, vx, vy)]
+                if len(odd_set) > 0:
+                    (cx, cy) = choice(odd_set)
+                else:
+                    (cx, cy) = choice(valid_set)
+                 # [sub_valid_nums.index(min_sub_valid_num)]
+
             state = valid.move(state, cur_player, cx, cy)
             cur_player = 1 - cur_player
             num_moves += 1
-
+            # num_of_win += dumb_score(state, self.board.player) > 0
         return dumb_score(state, self.board.player) > 0
-        # valid_moves = valid.get_valid_moves(state, cur_player)
-        # if len(valid_moves) == 0:
-        #     cur_player = 1 - cur_player
-        #     valid_moves = valid.get_valid_moves(state, cur_player)
-        #     if len(valid_moves) == 0:
-        #         # terminal
-        #         break
-        # chosen_move = choice(valid_moves)
-        # state = valid.move(state, cur_player, chosen_move[0], chosen_move[1])
-        # cur_player = 1 - cur_player
-        # num_moves += 1
-
-        # count = get_definite_count(state, self.board.player)
-        # if count > self.definite_count[self.board.player]:
-        #     return count - self.definite_count[self.board.player]
-        # count = get_definite_count(state, 1-self.board.player)
-        # if count > self.definite_count[1 - self.board.player]:
-        #     return self.definite_count[1 - self.board.player] - count
-
-        # if dumb_score(state, self.board.player) > 0:
-        #     return 1
-        # return -1
 
     def back_up(self, node, reward):
         """
@@ -234,6 +255,21 @@ class MonteCarloTreeSearch(object):
         print("{}/{}".format(self.root.Q, self.root.N))
         for child in self.root.children:
             print("{}/{}".format(child.Q, child.N))
+        '''
+        if chosen_child.pre_move == (0, 0):
+            self.priority_table[0].append((0, 1))
+            self.priority_table[0].append((1, 0))
+        elif chosen_child.pre_move == (0, 7):
+            self.priority_table[0].append((0, 6))
+            self.priority_table[0].append((1, 7))
+        elif chosen_child.pre_move == (7, 0):
+            self.priority_table[0].append((6, 0))
+            self.priority_table[0].append((7, 1))
+        elif chosen_child.pre_move == (7, 7):
+            self.priority_table[0].append((7, 6))
+            self.priority_table[0].append((6, 7))
+        '''
+        print(self.moves)
         return chosen_child.pre_move
 
     def mul_simulation(self, node):
@@ -250,6 +286,8 @@ class MonteCarloTreeSearch(object):
             count += 1
             if node.fully_expandable():
                 break
+        if len(node.children) == 0:
+            return count
         pool = ThreadPool(len(node.children))
         counts = pool.map(self.simulation, node.children)
         count += sum(counts)

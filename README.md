@@ -18,3 +18,5 @@ In general you should avoid edge play in the early and middle game if possible, 
 
 
 ### v0.4.0: 采用优先级策略。可以击败困难难度，输给超困难难度。后期表现不佳。
+
+### v0.4.1: 将每步的时间提高到20s
