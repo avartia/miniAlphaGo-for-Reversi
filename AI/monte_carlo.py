@@ -16,15 +16,19 @@ priority_table = [[(0, 0), (0, 7), (7, 0), (7, 7)], # 99
                   [(1, 3), (1, 4), (3, 1), (4, 1), (6, 3), (6, 4), (3, 6), (4, 6)], # -3
                   [(1, 2), (1, 5), (2, 1), (5, 1), (6, 2), (6, 5), (2, 6), (5, 6)], # -4
                   [(0, 1), (0, 6), (7, 1), (7, 6), (1, 0), (6, 0), (1, 7), (6, 7)], # -8
-                  [(1, 1), (6, 6), (1, 6), (6, 1)]
-                  ]
+                  [(1, 1), (6, 6), (1, 6), (6, 1)]]
 
 roxanne_table = [[(0, 0), (0, 7), (7, 0), (7, 7)],
-[(2, 2), (2, 3), (2, 4), (2, 5), (3, 2), (3, 3), (3, 4), (3, 5), (4, 2), (4, 3), (4, 4), (4, 5), (5, 2), (5, 3), (5, 4), (5, 5)],
-[(2, 0), (3, 0), (4, 0), (5, 0), (2, 7), (3, 7), (4, 7), (5, 7), (0, 2), (0, 3), (0, 4), (0, 5), (7, 2), (7, 3), (7, 4), (7, 5)],
-[(2, 1), (3, 1), (4, 1), (5, 1), (2, 6), (3, 6), (4, 6), (5, 6), (1, 2), (1, 3), (1, 4), (1, 5), (6, 2), (6, 3), (6, 4), (6, 5)],
-[(0, 1), (1, 0), (1, 1), (1, 6), (0, 6), (1, 7), (6, 1), (6, 0), (7, 1), (6, 6), (6, 7), (7, 6)]
-]
+                 [(2, 2), (2, 3), (2, 4), (2, 5), (3, 2), (3, 3), (3, 4), (3, 5),
+                  (4, 2), (4, 3), (4, 4), (4, 5), (5, 2), (5, 3), (5, 4), (5, 5)],
+                 [(2, 0), (3, 0), (4, 0), (5, 0), (2, 7), (3, 7), (4, 7), (5, 7),
+                  (0, 2), (0, 3), (0, 4), (0, 5), (7, 2), (7, 3), (7, 4), (7, 5)],
+                 [(2, 1), (3, 1), (4, 1), (5, 1), (2, 6), (3, 6), (4, 6), (5, 6),
+                  (1, 2), (1, 3), (1, 4), (1, 5), (6, 2), (6, 3), (6, 4), (6, 5)],
+                 [(0, 1), (1, 0), (1, 1), (1, 6), (0, 6), (1, 7),
+                  (6, 1), (6, 0), (7, 1), (6, 6), (6, 7), (7, 6)]]
+
+weight_table = []
 
 
 class Node(object):
@@ -92,7 +96,7 @@ class MonteCarloTreeSearch(object):
         Cp: parameter for MCTS
         """
         self.board = board
-        self.time_limit = timedelta(seconds=kwargs.get("time_limit", 10))
+        self.time_limit = timedelta(seconds=kwargs.get("time_limit", 20))
         self.max_moves = kwargs.get('max_moves', 60)
         self.max_depth = 0
         self.Cp = kwargs.get('Cp', 1.414)
@@ -118,7 +122,6 @@ class MonteCarloTreeSearch(object):
             for j in i:
                 if j is not None:
                     self.moves += 1
-        # self.definite_count = [get_definite_count(self.board.array, p) for p in [0, 1]]
 
     def tree_policy(self, node):
         """
@@ -188,7 +191,7 @@ class MonteCarloTreeSearch(object):
                     num_moves += 1
                     continue
             '''
-            if num_moves + self.moves < 48:
+            if self.moves + num_moves < 56:
                 valid_set = valid.get_priority_valid_moves(state, self.priority_table, cur_player)
                 if len(valid_set) == 0:
                     num_moves += 1
@@ -196,29 +199,37 @@ class MonteCarloTreeSearch(object):
                     continue
                 (cx, cy) = choice(valid_set)
             else:
-                # strategy for last 15 moves
                 valid_set = valid.get_valid_moves(state, cur_player)
                 if len(valid_set) == 0:
                     cur_player = 1 - cur_player
                     num_moves += 1
                     continue
-                # (cx, cy) = choice(valid_set)
-                # sub_valid_nums = [len(valid.get_valid_moves(exec_move(state, cur_player, x=x, y=y), 1-cur_player))
-                #                   for (x, y) in valid_set]
-                # min_sub_valid_num = min(sub_valid_nums)
-                # avoid even parity
-                odd_set = [(vx, vy) for (vx, vy) in valid_set if valid.parity(state, cur_player, vx, vy)]
-                if len(odd_set) > 0:
-                    (cx, cy) = choice(odd_set)
-                else:
-                    (cx, cy) = choice(valid_set)
-                 # [sub_valid_nums.index(min_sub_valid_num)]
-
+                (cx, cy) = choice(valid_set)
             state = valid.move(state, cur_player, cx, cy)
             cur_player = 1 - cur_player
             num_moves += 1
             # num_of_win += dumb_score(state, self.board.player) > 0
         return dumb_score(state, self.board.player) > 0
+
+    def update_priority_table(self, table, chosen_move):
+        """
+        update priority table
+        :param table: priority table
+        :param chosen_move: chosen_move (x, y)
+        :return:
+        """
+        if chosen_move == (0, 0):
+            table[0].append((0, 1))
+            table[0].append((1, 0))
+        elif chosen_move == (0, 7):
+            table[0].append((0, 6))
+            table[0].append((1, 7))
+        elif chosen_move == (7, 0):
+            table[0].append((6, 0))
+            table[0].append((7, 1))
+        elif chosen_move == (7, 7):
+            table[0].append((7, 6))
+            table[0].append((6, 7))
 
     def back_up(self, node, reward):
         """
@@ -242,33 +253,20 @@ class MonteCarloTreeSearch(object):
         """
         # tree depth
         self.max_depth = 0
-
         # count of simulation
         self.start_time = datetime.utcnow()
         count = self.mul_simulation(self.root)
         print("Num of Simulations: {} \nTime played:{}\nDefault Policy Played:{}\n".
               format(count, datetime.utcnow() - self.start_time, self.default_time))
-
+        if len(self.root.children) == 0:
+            return None
         max_win_percent, chosen_child = self.best_child(self.root, 0)
         print("Maximum depth searched: {} \nMax percent of winning:{}".format(self.max_depth, max_win_percent))
         # print("Size of table: {}".format(len(valid_table)))
         print("{}/{}".format(self.root.Q, self.root.N))
         for child in self.root.children:
             print("{}/{}".format(child.Q, child.N))
-        '''
-        if chosen_child.pre_move == (0, 0):
-            self.priority_table[0].append((0, 1))
-            self.priority_table[0].append((1, 0))
-        elif chosen_child.pre_move == (0, 7):
-            self.priority_table[0].append((0, 6))
-            self.priority_table[0].append((1, 7))
-        elif chosen_child.pre_move == (7, 0):
-            self.priority_table[0].append((6, 0))
-            self.priority_table[0].append((7, 1))
-        elif chosen_child.pre_move == (7, 7):
-            self.priority_table[0].append((7, 6))
-            self.priority_table[0].append((6, 7))
-        '''
+
         print(self.moves)
         return chosen_child.pre_move
 
@@ -290,6 +288,8 @@ class MonteCarloTreeSearch(object):
             return count
         pool = ThreadPool(len(node.children))
         counts = pool.map(self.simulation, node.children)
+        pool.close()
+        pool.join()
         count += sum(counts)
         return count
 

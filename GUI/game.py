@@ -93,7 +93,7 @@ def create_buttons():
     screen.create_rectangle(0, 0, 50, 50, fill="#000088", outline="#000088")
 
     # Arrow
-    screen.create_arc(5, 5, 45, 45, fill="#000088", width="2", style="arc", outline="white", extent=300)
+    screen.create_arc(5, 5, 45, 45, fill="#000111", width="2", style="arc", outline="white", extent=300)
     screen.create_polygon(33, 38, 36, 45, 40, 39, fill="white", outline="white")
 
     # Quit button

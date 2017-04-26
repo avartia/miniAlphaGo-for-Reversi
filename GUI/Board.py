@@ -24,6 +24,12 @@ class Board:
             self.array.append([])
             for y in range(8):
                 self.array[x].append(None)
+        # time
+        self.AI_single_time = timedelta(seconds=0)
+        self.AI_total_time = timedelta(seconds=0)
+        self.player_single_time = timedelta(seconds=0)
+        self.player_total_time = timedelta(seconds=0)
+        self.end_time = datetime.utcnow()
         # Initializing center values
         self.array[3][3] = 0
         self.array[3][4] = 1
@@ -139,30 +145,42 @@ class Board:
         if not (len(valid.get_valid_moves(self.array, self.player)) == 0 and
                         len(valid.get_valid_moves(self.array, 1 - self.player)) == 0):
             # Draw the scoreboard and update the screen
-            self.draw_score_board()
             screen.update()
+            self.draw_score_board()
             # If the computer is AI, make a exec_move
             if self.player == self.AIPlayer:
+                # update time
+                self.player_single_time = datetime.utcnow() - self.end_time
+                self.player_total_time = self.player_total_time + self.player_single_time
+                self.draw_score_board()
                 start_time = datetime.utcnow()
                 mcts_move = self.MCTS.uct_search()
-                self.board_move(mcts_move[0], mcts_move[1])
+                if mcts_move is not None:
+                    self.board_move(mcts_move[0], mcts_move[1])
                 delta_time = datetime.utcnow() - start_time
+                self.AI_single_time = delta_time
+                self.AI_total_time = self.AI_total_time + self.AI_single_time
                 print("Time used for this step: {} ".format(delta_time))
+                self.draw_score_board()
+                self.end_time = datetime.utcnow()
         else:
             black_cnt = 0
             white_cnt = 0
             for i in self.array:
                 for j in i:
-                    if j == 1:
+                    if j == self.AIPlayer:
                         black_cnt += 1
-                    if j == 0:
+                    if j == 1-self.AIPlayer:
                         white_cnt += 1
+            self.draw_score_board()
             if white_cnt > black_cnt:
                 screen.create_text(250, 550, anchor="c", font=("Consolas", 15), text="You Win!")
             elif white_cnt == black_cnt:
                 screen.create_text(250, 550, anchor="c", font=("Consolas", 15), text="Tie!")
             else:
                 screen.create_text(250, 550, anchor="c", font=("Consolas", 15), text="You Lose!")
+            if black_cnt + white_cnt == 64 or (len(valid.get_valid_moves(self.array, 0)) == 0 and len(valid.get_valid_moves(self.array, 1))):
+                self.over = True
 
     def recover_last_move(self):
         """
@@ -218,19 +236,29 @@ class Board:
                 elif self.array[x][y] == 1:
                     computer_score += 1
 
-        if self.player == 1-self.AIPlayer:
-            player_color = "green"
-            computer_color = "gray"
-        else:
-            player_color = "gray"
-            computer_color = "green"
-
-        screen.create_oval(5, 540, 25, 560, fill=player_color, outline=player_color)
-        screen.create_oval(380, 540, 400, 560, fill=computer_color, outline=computer_color)
+        screen.create_oval(5, 540, 25, 560, fill="white", outline="white")
+        screen.create_oval(420, 540, 440, 560, fill="black", outline="black")
 
         # Pushing text to screen
-        screen.create_text(30, 550, anchor="w", tags="score", font=("Consolas", 50), fill="white", text=player_score)
-        screen.create_text(400, 550, anchor="w", tags="score", font=("Consolas", 50), fill="black", text=computer_score)
+        screen.create_text(30, 550, anchor="w", tags="score", font=("Consolas", 30), fill="white", text=player_score)
+        single_time_white = self.player_single_time
+        total_time_white = self.player_total_time
+        single_time_black = self.AI_single_time
+        total_time_black = self.AI_total_time
+        if self.AIPlayer == 0:
+            single_time_white = self.AI_single_time
+            total_time_white = self.AI_total_time
+            single_time_black = self.player_single_time
+            total_time_black = self.player_total_time
+        screen.create_text(80, 550, anchor="w", tags="score", font=("Consolas", 20), fill="white", text=str(single_time_white.seconds // 60) + ':' + str(single_time_white.seconds % 60) + '/')
+        screen.create_text(160, 550, anchor="w", tags="score", font=("Consolas", 20), fill="white",
+                           text=str(total_time_white.seconds // 60) + ':' + str(total_time_white.seconds % 60))
+        screen.create_text(275, 550, anchor="w", tags="score", font=("Consolas", 20), fill="black",
+                           text=str(single_time_black.seconds // 60) + ':' + str(
+                               single_time_black.seconds % 60) + '/')
+        screen.create_text(350, 550, anchor="w", tags="score", font=("Consolas", 20), fill="black",
+                           text=str(total_time_black.seconds // 60) + ':' + str(total_time_black.seconds % 60))
+        screen.create_text(450, 550, anchor="w", tags="score", font=("Consolas", 30), fill="black", text=computer_score)
 
 
     def pass_test(self):
