@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
 # created by avartialu@gmail.com on 2017/4/8
 from datetime import *
-from math import log, sqrt
+from math import log, sqrt, fabs
 from multiprocessing.dummy import Pool as ThreadPool
 from random import choice
 from Strategy.strategy import *
 from Logic.logic import *
 
-priority_table = [[(0, 0), (0, 7), (7, 0), (7, 7)], # 99
-                  [(0, 2), (0, 5), (2, 0), (5, 0), (2, 7), (5, 7), (7, 2), (7, 5)], # 8
-                  [(2, 2), (2, 5), (5, 2), (5, 5)], # 7
-                  [(3, 0), (4, 0), (0, 3), (0, 4), (7, 3), (7, 4), (3, 7), (4, 7)], # 6
-                  [(3, 2), (4, 2), (2, 3), (2, 4), (3, 5), (4, 5), (5, 3), (5, 4)], # 4
+priority_table = [[(0, 0), (0, 7), (7, 0), (7, 7)],
+                  [(0, 2), (0, 5), (2, 0), (5, 0), (2, 7), (5, 7), (7, 2), (7, 5)],
+                  [(2, 2), (2, 5), (5, 2), (5, 5)],
+                  [(3, 0), (4, 0), (0, 3), (0, 4), (7, 3), (7, 4), (3, 7), (4, 7)],
+                  [(3, 2), (4, 2), (2, 3), (2, 4), (3, 5), (4, 5), (5, 3), (5, 4)],
                   [(3, 3), (4, 4), (3, 4), (4, 3)], # 0
-                  [(1, 3), (1, 4), (3, 1), (4, 1), (6, 3), (6, 4), (3, 6), (4, 6)], # -3
-                  [(1, 2), (1, 5), (2, 1), (5, 1), (6, 2), (6, 5), (2, 6), (5, 6)], # -4
-                  [(0, 1), (0, 6), (7, 1), (7, 6), (1, 0), (6, 0), (1, 7), (6, 7)], # -8
+                  [(1, 3), (1, 4), (3, 1), (4, 1), (6, 3), (6, 4), (3, 6), (4, 6)],
+                  [(1, 2), (1, 5), (2, 1), (5, 1), (6, 2), (6, 5), (2, 6), (5, 6)],
+                  [(0, 1), (0, 6), (7, 1), (7, 6), (1, 0), (6, 0), (1, 7), (6, 7)],
                   [(1, 1), (6, 6), (1, 6), (6, 1)]]
 
 roxanne_table = [[(0, 0), (0, 7), (7, 0), (7, 7)],
@@ -96,7 +96,7 @@ class MonteCarloTreeSearch(object):
         Cp: parameter for MCTS
         """
         self.board = board
-        self.time_limit = timedelta(seconds=kwargs.get("time_limit", 20))
+        self.time_limit = timedelta(seconds=kwargs.get("time_limit", 10))
         self.max_moves = kwargs.get('max_moves', 60)
         self.max_depth = 0
         self.Cp = kwargs.get('Cp', 1.414)
@@ -211,26 +211,6 @@ class MonteCarloTreeSearch(object):
             # num_of_win += dumb_score(state, self.board.player) > 0
         return dumb_score(state, self.board.player) > 0
 
-    def update_priority_table(self, table, chosen_move):
-        """
-        update priority table
-        :param table: priority table
-        :param chosen_move: chosen_move (x, y)
-        :return:
-        """
-        if chosen_move == (0, 0):
-            table[0].append((0, 1))
-            table[0].append((1, 0))
-        elif chosen_move == (0, 7):
-            table[0].append((0, 6))
-            table[0].append((1, 7))
-        elif chosen_move == (7, 0):
-            table[0].append((6, 0))
-            table[0].append((7, 1))
-        elif chosen_move == (7, 7):
-            table[0].append((7, 6))
-            table[0].append((6, 7))
-
     def back_up(self, node, reward):
         """
         back up.
@@ -277,6 +257,7 @@ class MonteCarloTreeSearch(object):
         :return: count
         """
         count = 0
+        self.time_limit = timedelta(seconds=62 - fabs(34-self.moves)*2)
         while datetime.utcnow() - self.start_time < self.time_limit:
             v = self.tree_policy(node)
             reward = self.default_policy(v)

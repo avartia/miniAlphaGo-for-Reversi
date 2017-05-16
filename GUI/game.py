@@ -89,20 +89,20 @@ def create_buttons():
     """
     # Restart button
     # Background/shadow
-    screen.create_rectangle(0, 5, 50, 55, fill="#000033", outline="#000033")
-    screen.create_rectangle(0, 0, 50, 50, fill="#000088", outline="#000088")
+    screen.create_rectangle(0, 5, 50, 55, fill="#003300", outline="#000033")
+    screen.create_rectangle(0, 0, 50, 50, fill="#008800", outline="#000088")
 
     # Arrow
-    screen.create_arc(5, 5, 45, 45, fill="#000111", width="2", style="arc", outline="white", extent=300)
+    screen.create_arc(5, 5, 45, 45, fill="#000111", width="4", style="arc", outline="white", extent=300)
     screen.create_polygon(33, 38, 36, 45, 40, 39, fill="white", outline="white")
 
     # Quit button
     # Background/shadow
-    screen.create_rectangle(450, 5, 500, 55, fill="#330000", outline="#330000")
-    screen.create_rectangle(450, 0, 500, 50, fill="#880000", outline="#880000")
+    screen.create_rectangle(450, 5, 500, 55, fill="#003300", outline="#330000")
+    screen.create_rectangle(450, 0, 500, 50, fill="#008800", outline="#880000")
     # "X"
-    screen.create_line(455, 5, 495, 45, fill="white", width="3")
-    screen.create_line(495, 5, 455, 45, fill="white", width="3")
+    screen.create_line(455, 5, 495, 45, fill="white", width="4")
+    screen.create_line(495, 5, 455, 45, fill="white", width="4")
 
 
 def init_game():
